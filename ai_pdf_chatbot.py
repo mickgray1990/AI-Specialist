@@ -124,16 +124,17 @@ def import_pdf_from_folder(folder_path):
     if not os.path.exists(folder_path):
         st.error(f'The folder {folder_path} does not exist')
         return None
-    
-    pdf_files = [file for file in os.listdir(folder_path) if file.endswith('.pdf')]
-    
+
+    # Filter PDF files with a case-insensitive check
+    pdf_files = [file for file in os.listdir(folder_path) if re.match(r'.*\.pdf$', file, re.IGNORECASE)]
+
     if not pdf_files:
         st.error(f'The folder {folder_path} does not contain any PDF files')
         return None
 
     total_files = len(pdf_files)
     st.write(f'Total number of PDF files: {total_files}')
-    
+
     text_chunks = []
     for index, file in enumerate(pdf_files, start=1):
         st.write(f'Processing file {index} of {total_files} - "{file}"')

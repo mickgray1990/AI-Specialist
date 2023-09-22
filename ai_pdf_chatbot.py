@@ -14,7 +14,7 @@ import time
 
 EMBEDDING_MODEL = "text-embedding-ada-002"
 RETRIES = 5
-n_cpu_cores = 4
+n_cpu_cores = 1
 
 #system_content = """Using the information from the provided context, please answer the question at the end of the prompt. When referencing information from the provided context, use in-text citations formatted in the Vancouver referencing style (e.g., [1], [2], [3]).
 #

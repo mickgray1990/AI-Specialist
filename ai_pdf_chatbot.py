@@ -264,7 +264,7 @@ def generate_new_embeddings(api_key):
                     st.warning(f"File {filename} will be deleted.")
         if st.button("Proceed with " + ("Appending" if append_option == 'Yes' else "Generating New") + " Embeddings"):
             try:
-                pdf_text_chunks = import_pdf_from_folder('docs')
+                pdf_text_chunks = import_pdf_from_folder('Docs')
                 if pdf_text_chunks is not None and len(pdf_text_chunks) > 0:
                     run_embedding_generator(api_key, filename, pdf_text_chunks, append=(append_option == 'Yes'), should_delete_existing_file=delete_option)
             except Exception as e:

@@ -124,17 +124,16 @@ def import_pdf_from_folder(folder_path):
     if not os.path.exists(folder_path):
         st.error(f'The folder {folder_path} does not exist')
         return None
-
-    # Filter PDF files with a case-insensitive check
-    pdf_files = [file for file in os.listdir(folder_path) if re.match(r'.*\.pdf$', file, re.IGNORECASE)]
-
+    
+    pdf_files = [file for file in os.listdir(folder_path) if file.endswith('.pdf')]
+    
     if not pdf_files:
         st.error(f'The folder {folder_path} does not contain any PDF files')
         return None
 
     total_files = len(pdf_files)
     st.write(f'Total number of PDF files: {total_files}')
-
+    
     text_chunks = []
     for index, file in enumerate(pdf_files, start=1):
         st.write(f'Processing file {index} of {total_files} - "{file}"')
@@ -222,6 +221,7 @@ def run_embedding_generator(api_key, filename, pdf_text_chunks, append, should_d
 
 def display_and_upload_pdf_files():
     docs_path = 'Docs'
+    
     if os.path.exists(docs_path):
         files = os.listdir(docs_path)
         if files:
@@ -233,12 +233,17 @@ def display_and_upload_pdf_files():
         st.error('"Docs" folder does not exist.')
 
     uploaded_files = st.file_uploader("Choose PDF files", type=["pdf"], accept_multiple_files=True)
+    
     if uploaded_files:
         for uploaded_file in uploaded_files:
             file_path = os.path.join(docs_path, uploaded_file.name)
             with open(file_path, 'wb') as out_file:
                 out_file.write(uploaded_file.getvalue())
             st.write(f"Uploaded {uploaded_file.name} to {docs_path}.")
+        
+        st.success("Success! All files have been uploaded successfully.")
+        st.info("Please reload the webpage to see the updated list of files.")
+
 
 def generate_new_embeddings(api_key):
     filename = st.text_input("Enter a filename for the embeddings:")
@@ -259,7 +264,7 @@ def generate_new_embeddings(api_key):
                     st.warning(f"File {filename} will be deleted.")
         if st.button("Proceed with " + ("Appending" if append_option == 'Yes' else "Generating New") + " Embeddings"):
             try:
-                pdf_text_chunks = import_pdf_from_folder('Docs')
+                pdf_text_chunks = import_pdf_from_folder('docs')
                 if pdf_text_chunks is not None and len(pdf_text_chunks) > 0:
                     run_embedding_generator(api_key, filename, pdf_text_chunks, append=(append_option == 'Yes'), should_delete_existing_file=delete_option)
             except Exception as e:
@@ -376,10 +381,53 @@ def use_existing_embeddings():
         st.warning('Please select a embeddings file.')
 
 
+def delete_local_files():
+    st.warning("This action will permanently delete all local files including embeddings.")
+    
+    if 'delete_button_pressed' not in st.session_state:
+        st.session_state.delete_button_pressed = False
+    
+    if st.button("Delete Local Files") or st.session_state.delete_button_pressed:
+        st.session_state.delete_button_pressed = True
+        user_confirmation = st.text_input("Type YES to delete all local files:")
+        
+        if st.button("Confirm Deletion"):
+            if user_confirmation == "YES":
+                folders_to_delete = ["Docs", "Docs Database", "Embeddings"]
+                
+                for folder in folders_to_delete:
+                    try:
+                        shutil.rmtree(folder)  # This function will delete the folder and its content
+                        st.success(f"Folder {folder} deleted successfully!")
+                    except FileNotFoundError:
+                        st.error(f"Folder {folder} does not exist!")
+                    except Exception as e:
+                        st.error(f"An error occurred while deleting folder {folder}: {str(e)}")
+            else:
+                st.error("You must type YES to delete the files.")
+
 
 def app():
     st.title("Specialist AI Advisor")
     
+    if 'logged_in' not in st.session_state:
+        st.session_state.logged_in = False
+    
+    if not st.session_state.logged_in:
+        username = st.text_input('Username:')
+        password = st.text_input('Password:', type='password')
+        
+        if st.button('Login'):
+            if username == 'TECHT' and password == 'TECHT2023':
+                st.session_state.logged_in = True
+                main_app()  # Call main_app() immediately after login
+            else:
+                st.error('Invalid username or password')
+    else:
+        main_app()  # Call main_app() if user is already logged in
+
+
+def main_app():
     # Add note directly underneath the title
     st.info("This application is currently in beta testing. For reporting bugs and suggesting improvements, please contact harrison.ferrier@outlook.com.  \n\n"
             "Please be aware that usage of the OpenAI API is subject to cost. It is highly recommended to configure your OpenAI API usage limits and monitor your usage regularly.  \n\n"
@@ -408,11 +456,11 @@ def app():
         
         option = st.selectbox(
             "Choose an option:",
-            ("Select Configuration", "Upload PDF Files", "Generate New Embeddings", "Use Existing Embeddings", "Delete API Key"),
+            ("Select Configuration", "Upload PDF Files", "Generate New Embeddings", "Use Existing Embeddings", "Delete API Key", "Delete Local Files"),
             index=0
         )
         st.write(f"Selected Option: {option}")
-        
+            
         if option == "Upload PDF Files":
             display_and_upload_pdf_files()
         elif option == "Generate New Embeddings":
@@ -423,6 +471,8 @@ def app():
             if st.button("Confirm Delete"):
                 os.remove(api_key_file)
                 st.success("API Key Deleted Successfully!")
+        elif option == "Delete Local Files":
+            delete_local_files()  # Please ensure you have this function defined in your actual code
 
 
 if __name__ == '__main__':
